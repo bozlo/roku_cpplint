@@ -2308,8 +2308,7 @@ def GetHeaderGuardCPPVariable(filename):
     filename: The name of a C++ header file.
 
   Returns:
-    The CPP variable that should be used as a header guard in the
-    named file.
+    The filename except extension
 
   """
 
@@ -2319,64 +2318,12 @@ def GetHeaderGuardCPPVariable(filename):
   filename = re.sub(r'/\.flymake/([^/]*)$', r'/\1', filename)
   # Replace 'c++' with 'cpp'.
   filename = filename.replace('C++', 'cpp').replace('c++', 'cpp')
+    
+  match = Match(r'.+(?=\..+$)', filename)
+  if match:
+    match = match.group(0)
 
-  fileinfo = FileInfo(filename)
-  file_path_from_root = fileinfo.RepositoryName()
-
-  def FixupPathFromRoot():
-    if _root_debug:
-      sys.stderr.write("\n_root fixup, _root = '%s', repository name = '%s'\n"
-          % (_root, fileinfo.RepositoryName()))
-
-    # Process the file path with the --root flag if it was set.
-    if not _root:
-      if _root_debug:
-        sys.stderr.write("_root unspecified\n")
-      return file_path_from_root
-
-    def StripListPrefix(lst, prefix):
-      # f(['x', 'y'], ['w, z']) -> None  (not a valid prefix)
-      if lst[:len(prefix)] != prefix:
-        return None
-      # f(['a, 'b', 'c', 'd'], ['a', 'b']) -> ['c', 'd']
-      return lst[(len(prefix)):]
-
-    # root behavior:
-    #   --root=subdir , lstrips subdir from the header guard
-    maybe_path = StripListPrefix(PathSplitToList(file_path_from_root),
-                                 PathSplitToList(_root))
-
-    if _root_debug:
-      sys.stderr.write(("_root lstrip (maybe_path=%s, file_path_from_root=%s," +
-          " _root=%s)\n") % (maybe_path, file_path_from_root, _root))
-
-    if maybe_path:
-      return os.path.join(*maybe_path)
-
-    #   --root=.. , will prepend the outer directory to the header guard
-    full_path = fileinfo.FullName()
-    # adapt slashes for windows
-    root_abspath = os.path.abspath(_root).replace('\\', '/')
-
-    maybe_path = StripListPrefix(PathSplitToList(full_path),
-                                 PathSplitToList(root_abspath))
-
-    if _root_debug:
-      sys.stderr.write(("_root prepend (maybe_path=%s, full_path=%s, " +
-          "root_abspath=%s)\n") % (maybe_path, full_path, root_abspath))
-
-    if maybe_path:
-      return os.path.join(*maybe_path)
-
-    if _root_debug:
-      sys.stderr.write("_root ignore, returning %s\n" % (file_path_from_root))
-
-    #   --root=FAKE_DIR is ignored
-    return file_path_from_root
-
-  file_path_from_root = FixupPathFromRoot()
-  return re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
-
+  return match
 
 def CheckForHeaderGuard(filename, clean_lines, error):
   """Checks that the file contains a header guard.
@@ -2401,12 +2348,15 @@ def CheckForHeaderGuard(filename, clean_lines, error):
     if Search(r'//\s*NOLINT\(build/header_guard\)', i):
       return
 
-  # Allow pragma once instead of header guards
+  cppvar = GetHeaderGuardCPPVariable(filename)
+
+  # Roku: Don't allow pragma once  
   for i in raw_lines:
     if Search(r'^\s*#pragma\s+once', i):
+      error(filename, 0, 'build/header_guard', 5,
+            'No #ifndef header guard found, suggested CPP variable is: %s_%s' %
+            (cppvar, r'1a2b3c4d5e6f7g8h'))
       return
-
-  cppvar = GetHeaderGuardCPPVariable(filename)
 
   ifndef = ''
   ifndef_linenum = 0
@@ -2428,18 +2378,32 @@ def CheckForHeaderGuard(filename, clean_lines, error):
       endif = line
       endif_linenum = linenum
 
+  # Attach 16 digit from ifndef at the end of cppvar
+  digits = ''
+  if ifndef:
+    digits = Search(r'[0-9a-z]{16}$', ifndef)
+    if digits:      
+      cppvar = cppvar + '_' + digits.group(0)
+    else:
+      error(filename, ifndef_linenum, 'build/header_guard', 5,
+          '#ifndef header guard has wrong style, please use: %s_%s' % (cppvar, r'1a2b3c4d5e6f7g8h'))
+      return
+
+  # check ifndef, define
   if not ifndef or not define or ifndef != define:
+    new_cppvar = cppvar
+    if not digits:
+      new_cppvar = cppvar + r'_1a2b3c4d5e6f7g8h'
+
     error(filename, 0, 'build/header_guard', 5,
           'No #ifndef header guard found, suggested CPP variable is: %s' %
-          cppvar)
+          new_cppvar)
     return
 
   # The guard should be PATH_FILE_H_, but we also allow PATH_FILE_H__
   # for backward compatibility.
   if ifndef != cppvar:
-    error_level = 0
-    if ifndef != cppvar + '_':
-      error_level = 5
+    error_level = 5
 
     ParseNolintSuppressions(filename, raw_lines[ifndef_linenum], ifndef_linenum,
                             error)
@@ -2449,34 +2413,11 @@ def CheckForHeaderGuard(filename, clean_lines, error):
   # Check for "//" comments on endif line.
   ParseNolintSuppressions(filename, raw_lines[endif_linenum], endif_linenum,
                           error)
-  match = Match(r'#endif\s*//\s*' + cppvar + r'(_)?\b', endif)
+  match = Match(r'#endif\s*//\s*' + cppvar + r'$', endif)
   if match:
-    if match.group(1) == '_':
-      # Issue low severity warning for deprecated double trailing underscore
-      error(filename, endif_linenum, 'build/header_guard', 0,
-            '#endif line should be "#endif  // %s"' % cppvar)
     return
 
-  # Didn't find the corresponding "//" comment.  If this file does not
-  # contain any "//" comments at all, it could be that the compiler
-  # only wants "/**/" comments, look for those instead.
-  no_single_line_comments = True
-  for i in xrange(1, len(raw_lines) - 1):
-    line = raw_lines[i]
-    if Match(r'^(?:(?:\'(?:\.|[^\'])*\')|(?:"(?:\.|[^"])*")|[^\'"])*//', line):
-      no_single_line_comments = False
-      break
-
-  if no_single_line_comments:
-    match = Match(r'#endif\s*/\*\s*' + cppvar + r'(_)?\s*\*/', endif)
-    if match:
-      if match.group(1) == '_':
-        # Low severity warning for double trailing underscore
-        error(filename, endif_linenum, 'build/header_guard', 0,
-              '#endif line should be "#endif  /* %s */"' % cppvar)
-      return
-
-  # Didn't find anything
+  # Didn't find anything or wrong style
   error(filename, endif_linenum, 'build/header_guard', 5,
         '#endif line should be "#endif  // %s"' % cppvar)
 
@@ -3197,10 +3138,10 @@ class NestingState(object):
       if access_match:
         classinfo.access = access_match.group(2)
 
-        # Check that access keywords are indented +1 space.  Skip this
+        # Check that access keywords are indented +0 space.  Skip this
         # check if the keywords are not preceded by whitespaces.
         indent = access_match.group(1)
-        if (len(indent) != classinfo.class_indent + 1 and
+        if (len(indent) != classinfo.class_indent + 0 and
             Match(r'^\s*$', indent)):
           if classinfo.is_struct:
             parent = 'struct ' + classinfo.name
@@ -3210,7 +3151,7 @@ class NestingState(object):
           if access_match.group(3):
             slots = access_match.group(3)
           error(filename, linenum, 'whitespace/indent', 3,
-                '%s%s: should be indented +1 space inside %s' % (
+                '%s%s: should not be indented a space inside %s' % (
                     access_match.group(2), slots, parent))
 
     # Consume braces or semicolons from what's left of the line
@@ -6419,13 +6360,7 @@ def FlagCxx11Features(filename, clean_lines, linenum, error):
 
   # Flag unapproved C++11 headers.
   if include and include.group(1) in ('cfenv',
-                                      'condition_variable',
                                       'fenv.h',
-                                      'future',
-                                      'mutex',
-                                      'thread',
-                                      'chrono',
-                                      'ratio',
                                       'regex',
                                       'system_error',
                                      ):

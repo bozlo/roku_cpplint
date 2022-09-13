@@ -1265,7 +1265,7 @@ class CpplintTest(CpplintTestBase):
     self.TestMultiLineLint(
         """
         template <class T, class D = default_delete<T>> class unique_ptr {
-         public:
+        public:
             unique_ptr(unique_ptr&& u) noexcept;
         };""",
         '')
@@ -2079,7 +2079,7 @@ class CpplintTest(CpplintTestBase):
           'foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class SomeClass {',
-           ' private:',
+           'private:',
            '  %s(SomeClass);' % macro_name,
            '  int member_;',
            '};',
@@ -2095,9 +2095,9 @@ class CpplintTest(CpplintTestBase):
           'foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class OuterClass {',
-           ' private:',
+           'private:',
            '  struct InnerClass {',
-           '   private:',
+           '  private:',
            '    %s(InnerClass);' % macro_name,
            '    int member;',
            '  };',
@@ -2114,17 +2114,17 @@ class CpplintTest(CpplintTestBase):
           'foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class OuterClass1 {',
-           ' private:',
+           'private:',
            '  struct InnerClass1 {',
-           '   private:',
+           '  private:',
            '    %s(InnerClass1);' % macro_name,
            '  };',
            '  %s(OuterClass1);' % macro_name,
            '};',
            'struct OuterClass2 {',
-           ' private:',
+           'private:',
            '  class InnerClass2 {',
-           '   private:',
+           '  private:',
            '    %s(InnerClass2);' % macro_name,
            '    // comment',
            '  };',
@@ -2135,7 +2135,7 @@ class CpplintTest(CpplintTestBase):
            '};',
            'void Func() {',
            '  struct LocalClass {',
-           '   private:',
+           '  private:',
            '    %s(LocalClass);' % macro_name,
            '  } variable;',
            '}',
@@ -3727,9 +3727,9 @@ class CpplintTest(CpplintTestBase):
     self.TestMultiLineLint(
         TrimExtraIndent("""
             class foo {
-             public slots:
+            public slots:
               void bar();
-             signals:
+            signals:
             };"""),
         '')
     self.TestMultiLineLint(
@@ -3738,7 +3738,7 @@ class CpplintTest(CpplintTestBase):
               public slots:
               void bar();
             };"""),
-        'public slots: should be indented +1 space inside class foo'
+        'public slots: should not be indented a space inside class foo'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         TrimExtraIndent("""
@@ -3746,7 +3746,7 @@ class CpplintTest(CpplintTestBase):
               signals:
               void bar();
             };"""),
-        'signals: should be indented +1 space inside class foo'
+        'signals: should not be indented a space inside class foo'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         TrimExtraIndent('''
@@ -3767,21 +3767,21 @@ class CpplintTest(CpplintTestBase):
     self.TestMultiLineLint(
         """
         class A {
-         public:  // no warning
+        public:  // no warning
           private:  // warning here
         };""",
-        'private: should be indented +1 space inside class A'
+        'private: should not be indented a space inside class A'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         """
         class B {
-         public:  // no warning
+        public:  // no warning
           template<> struct C {
-            public:    // warning here
-           protected:  // no warning
+           public:    // warning here
+          protected:  // no warning
           };
         };""",
-        'public: should be indented +1 space inside struct C'
+        'public: should not be indented a space inside struct C'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         """
@@ -3799,31 +3799,31 @@ class CpplintTest(CpplintTestBase):
         """
         class G {
           Q_OBJECT
-        public slots:
-        signals:
+          public slots:
+         signals:
         };""",
-        ['public slots: should be indented +1 space inside class G'
+        ['public slots: should not be indented a space inside class G'
          '  [whitespace/indent] [3]',
-         'signals: should be indented +1 space inside class G'
+         'signals: should not be indented a space inside class G'
          '  [whitespace/indent] [3]'])
     self.TestMultiLineLint(
         """
         class H {
           /* comments */ class I {
-           public:  // no warning
-            private:  // warning here
+          public:  // no warning
+           private:  // warning here
           };
         };""",
-        'private: should be indented +1 space inside class I'
+        'private: should not be indented a space inside class I'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         """
         class J
             : public ::K {
-         public:  // no warning
-          protected:  // warning here
+        public:  // no warning
+         protected:  // warning here
         };""",
-        'protected: should be indented +1 space inside class J'
+        'protected: should not be indented a space inside class J'
         '  [whitespace/indent] [3]')
     self.TestMultiLineLint(
         """
@@ -4486,15 +4486,18 @@ class CpplintTest(CpplintTestBase):
     for error in error_collector.ResultList():
       matched = re.search(
           'No #ifndef header guard found, suggested CPP variable is: '
-          '([A-Z0-9_]+)',
+          '([0-9a-zA-Z]+)',
           error)
       if matched is not None:
         return matched.group(1)
 
   def testBuildHeaderGuard(self):
-    file_path = 'mydir/foo.h'
-    expected_guard = self.GetBuildHeaderGuardPreprocessorSymbol(file_path)
-    self.assertTrue(re.search('MYDIR_FOO_H_$', expected_guard))
+    file_path = 'Foo.h'
+    expected_guard = self.GetBuildHeaderGuardPreprocessorSymbol(file_path)    
+    self.assertTrue(re.search('Foo$', expected_guard))
+
+    # set test header guard
+    expected_guard = 'Foo_1a2b3c4d5e6f7g8h'
 
     # No guard at all: expect one error.
     error_collector = ErrorCollector(self.assert_)
@@ -4525,7 +4528,7 @@ class CpplintTest(CpplintTestBase):
             '  [build/header_guard] [5]' % expected_guard),
         error_collector.ResultList())
 
-    # No define
+    # No define    
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(file_path, 'h',
                             ['#ifndef %s' % expected_guard], error_collector)
@@ -4587,7 +4590,7 @@ class CpplintTest(CpplintTestBase):
     self.assertEquals(
         1,
         error_collector.ResultList().count(
-            '#endif line should be "#endif  // %s"'
+            '#ifndef header guard has wrong style, please use: %s'
             '  [build/header_guard] [5]' % expected_guard),
         error_collector.ResultList())
 
@@ -4602,16 +4605,33 @@ class CpplintTest(CpplintTestBase):
       if line.find('build/header_guard') != -1:
         self.fail('Unexpected error: %s' % line)
 
-    # No header guard errors for old-style guard
+    # Capital digest header guard errors
+    error_collector = ErrorCollector(self.assert_)
+    cpplint.ProcessFileData(file_path, 'h',
+                            ['#ifndef Foo_1A2b3c4d5e6f7g8h',
+                             '#define Foo_1A2b3c4d5e6f7g8h',
+                             '#endif  // Foo_1A2b3c4d5e6f7g8h'],
+                            error_collector)
+    self.assertEquals(
+        1,
+        error_collector.ResultList().count(
+            '#ifndef header guard has wrong style, please use: %s'
+            '  [build/header_guard] [5]' % expected_guard),
+        error_collector.ResultList())
+
+    # header guard errors for old-style guard
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(file_path, 'h',
                             ['#ifndef %s_' % expected_guard,
                              '#define %s_' % expected_guard,
                              '#endif  // %s_' % expected_guard],
                             error_collector)
-    for line in error_collector.ResultList():
-      if line.find('build/header_guard') != -1:
-        self.fail('Unexpected error: %s' % line)
+    self.assertEquals(
+        1,
+        error_collector.ResultList().count(
+            '#ifndef header guard has wrong style, please use: %s'
+            '  [build/header_guard] [5]' % expected_guard),
+        error_collector.ResultList())
 
     old_verbose_level = cpplint._cpplint_state.verbose_level
     try:
@@ -4627,7 +4647,7 @@ class CpplintTest(CpplintTestBase):
           1,
           error_collector.ResultList().count(
               '#ifndef header guard has wrong style, please use: %s'
-              '  [build/header_guard] [0]' % expected_guard),
+              '  [build/header_guard] [5]' % expected_guard),
           error_collector.ResultList())
     finally:
       cpplint._cpplint_state.verbose_level = old_verbose_level
@@ -4635,9 +4655,9 @@ class CpplintTest(CpplintTestBase):
     # Completely incorrect header guard
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(file_path, 'h',
-                            ['#ifndef FOO',
-                             '#define FOO',
-                             '#endif  // FOO'],
+                            ['#ifndef Foo_1a2b3c4d5e6f',
+                             '#define Foo_1a2b3c4d5e6f',
+                             '#endif  // Foo_1a2b3c4d5e6f'],
                             error_collector)
     self.assertEquals(
         1,
@@ -4645,19 +4665,13 @@ class CpplintTest(CpplintTestBase):
             '#ifndef header guard has wrong style, please use: %s'
             '  [build/header_guard] [5]' % expected_guard),
         error_collector.ResultList())
-    self.assertEquals(
-        1,
-        error_collector.ResultList().count(
-            '#endif line should be "#endif  // %s"'
-            '  [build/header_guard] [5]' % expected_guard),
-        error_collector.ResultList())
 
     # incorrect header guard with nolint
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(file_path, 'h',
-                            ['#ifndef FOO  // NOLINT',
-                             '#define FOO',
-                             '#endif  // FOO NOLINT'],
+                            ['#ifndef Foo_1a2b3c4d5e6f7g8h  // NOLINT',
+                             '#define Foo_1a2b3c4d5e6f7g8h',
+                             '#endif  // Foo_1a2b3c4d5e6f7g8h NOLINT'],
                             error_collector)
     self.assertEquals(
         0,
@@ -4673,7 +4687,7 @@ class CpplintTest(CpplintTestBase):
         error_collector.ResultList())
 
     # Special case for flymake
-    for test_file in ['mydir/foo_flymake.h', 'mydir/.flymake/foo.h']:
+    for test_file in ['Foo_flymake.h']:
       error_collector = ErrorCollector(self.assert_)
       cpplint.ProcessFileData(test_file, 'h',
                               ['// Copyright 2014 Your Company.', ''],
@@ -4686,8 +4700,7 @@ class CpplintTest(CpplintTestBase):
           error_collector.ResultList())
 
     # Cuda guard
-    file_path = 'mydir/foo.cuh'
-    expected_guard = self.GetBuildHeaderGuardPreprocessorSymbol(file_path)
+    file_path = 'Foo.cuh'    
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(file_path, 'cuh',
                             ['#ifndef FOO',
@@ -4700,125 +4713,19 @@ class CpplintTest(CpplintTestBase):
             '#ifndef header guard has wrong style, please use: %s'
             '  [build/header_guard] [5]' % expected_guard),
         error_collector.ResultList())
+
+  def testPragmaOnce(self):
+    expected_guard = 'Foo_1a2b3c4d5e6f7g8h'
+    error_collector = ErrorCollector(self.assert_)
+    cpplint.ProcessFileData('Foo.h', 'h',
+        ['// Copyright 2014 Your Company.', '#pragma once', ''],
+        error_collector)
     self.assertEquals(
         1,
         error_collector.ResultList().count(
-            '#endif line should be "#endif  // %s"'
+            'No #ifndef header guard found, suggested CPP variable is: %s'
             '  [build/header_guard] [5]' % expected_guard),
         error_collector.ResultList())
-
-  def testPragmaOnce(self):
-    error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('mydir/foo.h', 'h',
-        ['// Copyright 2014 Your Company.', '#pragma once', ''],
-        error_collector)
-    self.assertEquals([], error_collector.ResultList())
-
-  def testBuildHeaderGuardWithRoot(self):
-    temp_directory = os.path.realpath(tempfile.mkdtemp())
-    try:
-      test_directory = os.path.join(temp_directory, "test")
-      os.makedirs(test_directory)
-      os.makedirs(os.path.join(test_directory, ".svn"))
-      header_directory = os.path.join(test_directory, "cpplint")
-      os.makedirs(header_directory)
-      self.doTestBuildHeaderGuardWithRoot(header_directory)
-    finally:
-      shutil.rmtree(temp_directory)
-
-  def doTestBuildHeaderGuardWithRoot(self, header_directory):
-
-    # note: Tested file paths must be real, otherwise
-    # the repository name lookup will fail.
-    file_path = os.path.join(header_directory,
-                             'cpplint_test_header.h')
-    open(file_path, 'a').close()
-    file_info = cpplint.FileInfo(file_path)
-    if file_info.FullName() == file_info.RepositoryName():
-      # When FileInfo cannot deduce the root directory of the repository,
-      # FileInfo.RepositoryName returns the same value as FileInfo.FullName.
-      # This can happen when this source file was obtained without .svn or
-      # .git directory. (e.g. using 'svn export' or 'git archive').
-      # Skip this test in such a case because --root flag makes sense only
-      # when the root directory of the repository is properly deduced.
-      return
-
-    self.assertEquals('CPPLINT_CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-    #
-    # test --root flags:
-    #   this changes the cpp header guard prefix
-    #
-
-    # left-strip the header guard by using a root dir inside of the repo dir.
-    # relative directory
-    cpplint._root = 'cpplint'
-    self.assertEquals('CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    nested_header_directory = os.path.join(header_directory, "nested")
-    nested_file_path = os.path.join(nested_header_directory, 'cpplint_test_header.h')
-    os.makedirs(nested_header_directory)
-    open(nested_file_path, 'a').close()
-
-    cpplint._root = os.path.join('cpplint', 'nested')
-    actual = cpplint.GetHeaderGuardCPPVariable(nested_file_path)
-    self.assertEquals('CPPLINT_TEST_HEADER_H_',
-                      actual)
-
-    # absolute directory
-    # (note that CPPLINT.cfg root=setting is always made absolute)
-    cpplint._root = header_directory
-    self.assertEquals('CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    cpplint._root = nested_header_directory
-    self.assertEquals('CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(nested_file_path))
-
-    # --root flag is ignored if an non-existent directory is specified.
-    cpplint._root = 'NON_EXISTENT_DIR'
-    self.assertEquals('CPPLINT_CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    # prepend to the header guard by using a root dir that is more outer
-    # than the repo dir
-
-    # (using absolute paths)
-    # (note that CPPLINT.cfg root=setting is always made absolute)
-    this_files_path = os.path.dirname(os.path.abspath(file_path))
-    (styleguide_path, this_files_dir) = os.path.split(this_files_path)
-    (styleguide_parent_path, styleguide_dir_name) = os.path.split(styleguide_path)
-    # parent dir of styleguide
-    cpplint._root = styleguide_parent_path
-    self.assertIsNotNone(styleguide_parent_path)
-    # do not hardcode the 'styleguide' repository name, it could be anything.
-    expected_prefix = re.sub(r'[^a-zA-Z0-9]', '_', styleguide_dir_name).upper() + '_'
-    # do not have 'styleguide' repo in '/'
-    self.assertEquals('%sCPPLINT_CPPLINT_TEST_HEADER_H_' % (expected_prefix),
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    # To run the 'relative path' tests, we must be in the directory of this test file.
-    cur_dir = os.getcwd()
-    os.chdir(this_files_path)
-
-    # (using relative paths)
-    styleguide_rel_path = os.path.relpath(styleguide_path, this_files_path)
-    # '..'
-    cpplint._root = styleguide_rel_path
-    self.assertEquals('CPPLINT_CPPLINT_TEST_HEADER_H_',
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    styleguide_rel_path = os.path.relpath(styleguide_parent_path,
-                                          this_files_path)  # '../..'
-    cpplint._root = styleguide_rel_path
-    self.assertEquals('%sCPPLINT_CPPLINT_TEST_HEADER_H_' % (expected_prefix),
-                      cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    cpplint._root = None
-
-    # Restore previous CWD.
-    os.chdir(cur_dir)
 
   def testIncludeItsHeader(self):
     temp_directory = os.path.realpath(tempfile.mkdtemp())
@@ -4920,52 +4827,6 @@ class CpplintTest(CpplintTestBase):
 
     self.assertEquals(['a', 'b', 'c', 'd'],
                       cpplint.PathSplitToList(os.path.join('a', 'b', 'c', 'd')))
-
-  def testBuildHeaderGuardWithRepository(self):
-    temp_directory = os.path.realpath(tempfile.mkdtemp())
-    temp_directory2 = os.path.realpath(tempfile.mkdtemp())
-    try:
-      os.makedirs(os.path.join(temp_directory, ".svn"))
-      trunk_dir = os.path.join(temp_directory, "trunk")
-      os.makedirs(trunk_dir)
-      header_directory = os.path.join(trunk_dir, "cpplint")
-      os.makedirs(header_directory)
-      file_path = os.path.join(header_directory, 'cpplint_test_header.h')
-      open(file_path, 'a').close()
-
-      # search for .svn if _repository is not specified
-      self.assertEquals('TRUNK_CPPLINT_CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-
-      # use the provided repository root for header guards
-      cpplint._repository = os.path.relpath(trunk_dir)
-      self.assertEquals('CPPLINT_CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-      cpplint._repository = os.path.abspath(trunk_dir)
-      self.assertEquals('CPPLINT_CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-
-      # ignore _repository if it doesnt exist
-      cpplint._repository = os.path.join(temp_directory, 'NON_EXISTANT')
-      self.assertEquals('TRUNK_CPPLINT_CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-
-      # ignore _repository if it exists but file isn't in it
-      cpplint._repository = os.path.relpath(temp_directory2)
-      self.assertEquals('TRUNK_CPPLINT_CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-
-      # _root should be relative to _repository
-      cpplint._repository = os.path.relpath(trunk_dir)
-      cpplint._root = 'cpplint'
-      self.assertEquals('CPPLINT_TEST_HEADER_H_',
-                        cpplint.GetHeaderGuardCPPVariable(file_path))
-
-    finally:
-      shutil.rmtree(temp_directory)
-      shutil.rmtree(temp_directory2)
-      cpplint._repository = None
-      cpplint._root = None
 
   def testBuildInclude(self):
     # Test that include statements have slashes in them.
@@ -5196,9 +5057,6 @@ class Cxx11Test(CpplintTestBase):
     self.TestCxx11Feature('#include <tr1/regex>',
                           'C++ TR1 headers such as <tr1/regex> are '
                           'unapproved.  [build/c++tr1] [5]')
-    self.TestCxx11Feature('#include <mutex>',
-                          '<mutex> is an unapproved C++11 header.'
-                          '  [build/c++11] [5]')
 
   def testBlockedClasses(self):
     self.TestCxx11Feature('std::alignment_of<T>',
