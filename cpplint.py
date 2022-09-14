@@ -702,6 +702,107 @@ _C_HEADERS = frozenset([
     'xmmintin.h',
     ])
 
+# RokuOS C++ header folders
+# ls ~/work/roku/firmware/os/RokuOS/*/Include/* -d -1 |  sed 's#.*/##' | sort | uniq
+ROKU_CPP_HEADER_FOLDERS = frozenset([
+    "Addon",
+    "AnimatedImage",
+    "AppFramework",
+    "Application",
+    "ApplicationManager",
+    "AQ",
+    "AudioCapture",
+    "AudioDsp",
+    "AudioSettings",
+    "AutoGS",
+    "AVMedia",
+    "Base",
+    "Beacon",
+    "CaptionPainter",
+    "CEC",
+    "CertManager",
+    "ChannelPlayer",
+    "ChannelStore",
+    "CIPlus",
+    "ClosedCaption",
+    "CompositorIPC",
+    "Configuration",
+    "Connect",
+    "Constants.h",
+    "ContentRecognition",
+    "Crypto",
+    "CurlClient",
+    "DecoderAgent",
+    "DecoderMonitor",
+    "Device",
+    "DiscardableChannelCache",
+    "Download",
+    "DRM",
+    "DTMO",
+    "ExternalControl",
+    "FileDescriptorTracker",
+    "FME",
+    "FreeviewUK",
+    "GamingRemote",
+    "Graphics",
+    "GridAnimation",
+    "GuestMode",
+    "HbbTV",
+    "HeapMonitor",
+    "HttpClient",
+    "HttpPolicyManager",
+    "IdleActions",
+    "InputEvents",
+    "InterfaceWrapper",
+    "InterProcess",
+    "IO",
+    "LegalAgreements",
+    "Logging",
+    "LT",
+    "MediaCentral",
+    "MediaClient",
+    "MediaPlayer",
+    "MediaPlayerExtensions",
+    "MVPD",
+    "NativeUI",
+    "Network",
+    "Notifications",
+    "NRD",
+    "Perf",
+    "Peripheral",
+    "Peripherals",
+    "PrecisionPCM",
+    "Rail",
+    "ResourceControl",
+    "RPNS",
+    "SceneGraph",
+    "Scribe",
+    "Scripting",
+    "SDK1",
+    "Security",
+    "SharedUI",
+    "SndPcm",
+    "SoundSettings",
+    "StatusLED",
+    "StreamBar",
+    "SWUpdate",
+    "SwVideoRender",
+    "TagLibrary",
+    "Teletext",
+    "TextToSpeech",
+    "Theme",
+    "TrickPlay",
+    "Tuner",
+    "TunerStack",
+    "TV",
+    "UISupport",
+    "UnitTests",
+    "Utilities",
+    "VoiceInput",
+    "VoiceRendering",
+    "Wallpaper",
+])
+
 # Folders of C libraries so commonly used in C++,
 # that they have parity with standard C libraries.
 C_STANDARD_HEADER_FOLDERS = frozenset([
@@ -745,11 +846,12 @@ _TYPES = re.compile(
 
 # These headers are excluded from [build/include] and [build/include_order]
 # checks:
-# - Anything not following google file name conventions (containing an
-#   uppercase character, such as Python.h or nsStringAPI.h, for example).
+# - Anything not following Roku file name conventions (not containing an
+#   uppercase character from start, such as nsStringAPI.h, for example).
 # - Lua headers.
 _THIRD_PARTY_HEADERS_PATTERN = re.compile(
-    r'^(?:[^/]*[A-Z][^/]*\.h|lua\.h|lauxlib\.h|lualib\.h)$')
+#    r'^(?:[^/]*[A-Z][^/]*\.h|lua\.h|lauxlib\.h|lualib\.h)$')
+    r'^(?:[a-z][^/]*[A-Z][^/]*\.h|lua\.h|lauxlib\.h|lualib\.h|.+\.(?:hh|hpp|hxx|inc))$')
 
 # Pattern for matching FileInfo.BaseName() against test file name
 _test_suffixes = ['_test', '_regtest', '_unittest']
@@ -819,6 +921,7 @@ _OTHER_SYS_HEADER = 3
 _LIKELY_MY_HEADER = 4
 _POSSIBLE_MY_HEADER = 5
 _OTHER_HEADER = 6
+_ROKU_CPP_HEADER = 7
 
 # These constants define the current inline assembly state
 _NO_ASM = 0       # Outside of inline assembly block
@@ -945,13 +1048,13 @@ def GetHeaderExtensions():
     return _hpp_headers
   if _valid_extensions:
     return {h for h in _valid_extensions if 'h' in h}
-  return set(['h', 'hh', 'hpp', 'hxx', 'h++', 'cuh'])
+  return set(['h', 'hh', 'hpp', 'hxx', 'h++'])
 
 # The allowed extensions for file names
 # This is set by --extensions flag
 def GetAllExtensions():
   return GetHeaderExtensions().union(_valid_extensions or set(
-    ['c', 'cc', 'cpp', 'cxx', 'c++', 'cu']))
+    ['c', 'cc', 'cpp', 'cxx', 'c++']))
 
 def ProcessExtensionsOption(val):
   global _valid_extensions
@@ -1101,8 +1204,10 @@ class _IncludeState(object):
   _MY_H_SECTION = 1
   _C_SECTION = 2
   _CPP_SECTION = 3
-  _OTHER_SYS_SECTION = 4
-  _OTHER_H_SECTION = 5
+  _ROKU_CPP_SECTION = 4
+  _OTHER_SYS_SECTION = 5
+  _OTHER_H_SECTION = 6
+  
 
   _TYPE_NAMES = {
       _C_SYS_HEADER: 'C system header',
@@ -1111,6 +1216,7 @@ class _IncludeState(object):
       _LIKELY_MY_HEADER: 'header this file implements',
       _POSSIBLE_MY_HEADER: 'header this file may implement',
       _OTHER_HEADER: 'other header',
+      _ROKU_CPP_HEADER: 'Roku C++ header',      
       }
   _SECTION_NAMES = {
       _INITIAL_SECTION: "... nothing. (This can't be an error.)",
@@ -1119,6 +1225,7 @@ class _IncludeState(object):
       _CPP_SECTION: 'C++ system header',
       _OTHER_SYS_SECTION: 'other system header',
       _OTHER_H_SECTION: 'other header',
+      _ROKU_CPP_SECTION: 'Roku C++ header',
       }
 
   def __init__(self):
@@ -1231,6 +1338,12 @@ class _IncludeState(object):
       else:
         self._last_header = ''
         return error_message
+    elif header_type == _ROKU_CPP_HEADER:
+      if self._section <= self._ROKU_CPP_SECTION:
+        self._section = self._ROKU_CPP_SECTION
+      else:
+        self._last_header = ''
+        return error_message        
     elif header_type == _OTHER_SYS_HEADER:
       if self._section <= self._OTHER_SYS_SECTION:
         self._section = self._OTHER_SYS_SECTION
@@ -1241,7 +1354,8 @@ class _IncludeState(object):
       if self._section <= self._MY_H_SECTION:
         self._section = self._MY_H_SECTION
       else:
-        self._section = self._OTHER_H_SECTION
+        self._last_header = ''
+        return error_message
     elif header_type == _POSSIBLE_MY_HEADER:
       if self._section <= self._MY_H_SECTION:
         self._section = self._MY_H_SECTION
@@ -4964,6 +5078,10 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
             # additional linux glibc header folders
             or Search(r'(?:%s)\/.*\.h' % "|".join(C_STANDARD_HEADER_FOLDERS), include))
 
+
+  # find Roku CPP header
+  is_roku_cpp_header = Search(r'(?:%s)\/.*\.h' % "|".join(ROKU_CPP_HEADER_FOLDERS), include)
+
   # Headers with C++ extensions shouldn't be considered C system headers
   include_ext = os.path.splitext(include)[1]
   is_system = used_angle_brackets and not include_ext in ['.hh', '.hpp', '.hxx', '.h++']
@@ -4971,6 +5089,8 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   if is_system:
     if is_cpp_header:
       return _CPP_SYS_HEADER
+    if is_roku_cpp_header:
+      return _ROKU_CPP_HEADER
     if is_std_c_header:
       return _C_SYS_HEADER
     else:
@@ -5003,6 +5123,21 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   return _OTHER_HEADER
 
 
+def _CheckMyHeader(filename, header_name):
+  """Check if header_name is my header.
+
+  Args:
+    filename: The current file name, it may have a path
+    header_name: Header file name
+
+  Returns:
+    true if the header file name is the same as filename
+  """
+  match1 = Search(r'(\w+)\.\w+$', filename)
+  match2 = Match(r'^([^/]+)\.\w+$', header_name)
+  if match1 and match2:
+    return match1.group(1) == match2.group(1)
+  return False
 
 def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
   """Check rules that are applicable to #include lines.
@@ -5031,6 +5166,7 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
   match = Match(r'#include\s*"([^/]+\.(.*))"', line)
   if match:
     if (IsHeaderExtension(match.group(2)) and
+        not _CheckMyHeader(filename, match.group(1)) and
         not _THIRD_PARTY_HEADERS_PATTERN.match(match.group(1))):
       error(filename, linenum, 'build/include_subdir', 4,
             'Include the directory when naming header files')
@@ -5076,9 +5212,10 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
       # 2) c system files
       # 3) cpp system files
       # 4) for foo.cc, foo.h  (deprecated location)
-      # 5) other google headers
+      # 5) Roku C++ headers
+      # 6) other google headers
       #
-      # We classify each include statement as one of those 5 types
+      # We classify each include statement as one of those 6 types
       # using a number of techniques. The include_state object keeps
       # track of the highest type seen, and complains if we see a
       # lower type after that.
@@ -5086,7 +5223,7 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
           _ClassifyInclude(fileinfo, include, used_angle_brackets, _include_order))
       if error_message:
         error(filename, linenum, 'build/include_order', 4,
-              '%s. Should be: %s.h, c system, c++ system, other.' %
+              '%s. Should be: %s.h, c system, c++ system, Roku, other.' %
               (error_message, fileinfo.BaseName()))
       canonical_include = include_state.CanonicalizeAlphabeticalOrder(include)
       if not include_state.IsInAlphabeticalOrder(

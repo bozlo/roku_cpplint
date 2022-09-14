@@ -160,12 +160,12 @@ class CpplintTestBase(unittest.TestCase):
   def PerformSingleLineLint(self, code):
     error_collector = ErrorCollector(self.assert_)
     lines = code.split('\n')
-    cpplint.RemoveMultiLineComments('foo.h', lines, error_collector)
+    cpplint.RemoveMultiLineComments('Foo.h', lines, error_collector)
     clean_lines = cpplint.CleansedLines(lines)
     include_state = cpplint._IncludeState()
     function_state = cpplint._FunctionState()
     nesting_state = cpplint.NestingState()
-    cpplint.ProcessLine('foo.cc', 'cc', clean_lines, 0,
+    cpplint.ProcessLine('Foo.cc', 'cc', clean_lines, 0,
                         include_state, function_state,
                         nesting_state, error_collector)
     # Single-line lint tests are allowed to fail the 'unlintable function'
@@ -178,16 +178,16 @@ class CpplintTestBase(unittest.TestCase):
   def PerformMultiLineLint(self, code):
     error_collector = ErrorCollector(self.assert_)
     lines = code.split('\n')
-    cpplint.RemoveMultiLineComments('foo.h', lines, error_collector)
+    cpplint.RemoveMultiLineComments('Foo.h', lines, error_collector)
     lines = cpplint.CleansedLines(lines)
     nesting_state = cpplint.NestingState()
     for i in xrange(lines.NumLines()):
-      nesting_state.Update('foo.h', lines, i, error_collector)
-      cpplint.CheckStyle('foo.h', lines, i, 'h', nesting_state,
+      nesting_state.Update('Foo.h', lines, i, error_collector)
+      cpplint.CheckStyle('Foo.h', lines, i, 'h', nesting_state,
                          error_collector)
-      cpplint.CheckForNonStandardConstructs('foo.h', lines, i,
+      cpplint.CheckForNonStandardConstructs('Foo.h', lines, i,
                                             nesting_state, error_collector)
-    nesting_state.CheckCompletedBlocks('foo.h', error_collector)
+    nesting_state.CheckCompletedBlocks('Foo.h', error_collector)
     return error_collector.Results()
 
   # Similar to PerformMultiLineLint, but calls CheckLanguage instead of
@@ -220,7 +220,7 @@ class CpplintTestBase(unittest.TestCase):
     Returns:
       The accumulated errors.
     """
-    file_name = 'foo.cc'
+    file_name = 'Foo.cc'
     error_collector = ErrorCollector(self.assert_)
     function_state = cpplint._FunctionState()
     lines = code.split('\n')
@@ -231,7 +231,7 @@ class CpplintTestBase(unittest.TestCase):
                                       function_state, error_collector)
     return error_collector.Results()
 
-  def PerformIncludeWhatYouUse(self, code, filename='foo.h', io=codecs):
+  def PerformIncludeWhatYouUse(self, code, filename='Foo.h', io=codecs):
     # First, build up the include state.
     error_collector = ErrorCollector(self.assert_)
     include_state = cpplint._IncludeState()
@@ -295,12 +295,12 @@ class CpplintTest(CpplintTestBase):
 
   def GetNamespaceResults(self, lines):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.RemoveMultiLineComments('foo.h', lines, error_collector)
+    cpplint.RemoveMultiLineComments('Foo.h', lines, error_collector)
     lines = cpplint.CleansedLines(lines)
     nesting_state = cpplint.NestingState()
     for i in xrange(lines.NumLines()):
-      nesting_state.Update('foo.h', lines, i, error_collector)
-      cpplint.CheckForNamespaceIndentation('foo.h', nesting_state,
+      nesting_state.Update('Foo.h', lines, i, error_collector)
+      cpplint.CheckForNamespaceIndentation('Foo.h', nesting_state,
                                            lines, i, error_collector)
 
     return error_collector.Results()
@@ -915,7 +915,7 @@ class CpplintTest(CpplintTestBase):
   # Test false errors that happened with some include file names
   def testIncludeFilenameFalseError(self):
     self.TestLint(
-        '#include "foo/long-foo.h"',
+        '#include "foo/long-Foo.h"',
         '')
     self.TestLint(
         '#include "foo/sprintf.h"',
@@ -940,11 +940,11 @@ class CpplintTest(CpplintTestBase):
 
   def testIncludeWhatYouUseNoImplementationFiles(self):
     code = 'std::vector<int> foo;'
-    for extension in ['h', 'hpp', 'hxx', 'h++', 'cuh']:
+    for extension in ['h', 'hpp', 'hxx', 'h++']:
       self.assertEquals('Add #include <vector> for vector<>'
                        '  [build/include_what_you_use] [4]',
                        self.PerformIncludeWhatYouUse(code, 'foo.' + extension))
-    for extension in ['c', 'cc', 'cpp', 'cxx', 'c++', 'cu']:
+    for extension in ['c', 'cc', 'cpp', 'cxx', 'c++']:
       self.assertEquals('',
                        self.PerformIncludeWhatYouUse(code, 'foo.' + extension))
 
@@ -1161,7 +1161,7 @@ class CpplintTest(CpplintTestBase):
         '')
 
     # Test the UpdateIncludeState code path.
-    mock_header_contents = ['#include "blah/foo.h"', '#include "blah/bar.h"']
+    mock_header_contents = ['#include "blah/Foo.h"', '#include "blah/bar.h"']
     message = self.PerformIncludeWhatYouUse(
         '#include "blah/a.h"',
         filename='blah/a.cc',
@@ -1214,7 +1214,6 @@ class CpplintTest(CpplintTestBase):
     self.assertEquals((True, ''), f('base/google_test.cxx', 'base/google.hxx'))
     self.assertEquals((True, ''), f('base/google_test.cpp', 'base/google.hpp'))
     self.assertEquals((True, ''), f('base/google_test.c++', 'base/google.h++'))
-    self.assertEquals((True, ''), f('base/google_test.cu', 'base/google.cuh'))
     self.assertEquals((True, ''),
                       f('base/google_unittest.cc', 'base/google.h'))
     self.assertEquals((True, ''),
@@ -1725,7 +1724,7 @@ class CpplintTest(CpplintTestBase):
           '')
       # Special case for variadic arguments
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc',
+      cpplint.ProcessFileData('Foo.cc', 'cc',
           ['class Foo {',
           '  template<typename... Args>',
           '  explicit Foo(const int arg, Args&&... args) {}',
@@ -1735,7 +1734,7 @@ class CpplintTest(CpplintTestBase):
         'Constructors that require multiple arguments should not be marked '
         'explicit.  [runtime/explicit] [0]'))
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc',
+      cpplint.ProcessFileData('Foo.cc', 'cc',
           ['class Foo {',
           '  template<typename... Args>',
           '  explicit Foo(Args&&... args) {}',
@@ -1745,7 +1744,7 @@ class CpplintTest(CpplintTestBase):
         'Constructors that require multiple arguments should not be marked '
         'explicit.  [runtime/explicit] [0]'))
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc',
+      cpplint.ProcessFileData('Foo.cc', 'cc',
           ['class Foo {',
           '  template<typename... Args>',
           '  Foo(const int arg, Args&&... args) {}',
@@ -1755,7 +1754,7 @@ class CpplintTest(CpplintTestBase):
         'Constructors callable with one argument should be marked explicit.'
         '  [runtime/explicit] [5]'))
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc',
+      cpplint.ProcessFileData('Foo.cc', 'cc',
           ['class Foo {',
           '  template<typename... Args>',
           '  Foo(Args&&... args) {}',
@@ -1766,7 +1765,7 @@ class CpplintTest(CpplintTestBase):
         '  [runtime/explicit] [5]'))
       # Anything goes inside an assembly block
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc',
+      cpplint.ProcessFileData('Foo.cc', 'cc',
                               ['void Func() {',
                                '  __asm__ (',
                                '    "hlt"',
@@ -1877,7 +1876,7 @@ class CpplintTest(CpplintTestBase):
 
       error_collector = ErrorCollector(self.assert_)
       cpplint.ProcessFileData(
-          'foo.cc', 'cc',
+          'Foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'virtual void F(int a,',
            '               int b) ' + virt_specifier + ';',
@@ -1902,7 +1901,7 @@ class CpplintTest(CpplintTestBase):
 
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company.',
          'struct A : virtual B {',
          '  ~A() override;'
@@ -2076,7 +2075,7 @@ class CpplintTest(CpplintTestBase):
         'DISALLOW_IMPLICIT_CONSTRUCTORS'):
       error_collector = ErrorCollector(self.assert_)
       cpplint.ProcessFileData(
-          'foo.cc', 'cc',
+          'Foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class SomeClass {',
            'private:',
@@ -2092,7 +2091,7 @@ class CpplintTest(CpplintTestBase):
 
       error_collector = ErrorCollector(self.assert_)
       cpplint.ProcessFileData(
-          'foo.cc', 'cc',
+          'Foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class OuterClass {',
            'private:',
@@ -2111,7 +2110,7 @@ class CpplintTest(CpplintTestBase):
 
       error_collector = ErrorCollector(self.assert_)
       cpplint.ProcessFileData(
-          'foo.cc', 'cc',
+          'Foo.cc', 'cc',
           ['// Copyright 2014 Your Company.',
            'class OuterClass1 {',
            'private:',
@@ -2444,7 +2443,7 @@ class CpplintTest(CpplintTestBase):
     self.TestLint('void NS::Func(X& x) {', '')
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company. All Rights Reserved.',
          'void a::b() {}',
          'void f(int& q) {}',
@@ -2458,7 +2457,7 @@ class CpplintTest(CpplintTestBase):
     # state to reproduce as opposed to just TestLint.
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company. All Rights Reserved.',
          'void swap(int &x,',
          '          int &y) {',
@@ -2501,7 +2500,7 @@ class CpplintTest(CpplintTestBase):
     # Multi-line references
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company. All Rights Reserved.',
          'void Func(const Outer::',
          '              Inner& const_x,',
@@ -2527,7 +2526,7 @@ class CpplintTest(CpplintTestBase):
     # A peculiar false positive due to bad template argument parsing
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company. All Rights Reserved.',
          'inline RCULocked<X>::ReadPtr::ReadPtr(const RCULocked* rcu) {',
          '  DCHECK(!(data & kFlagMask)) << "Error";',
@@ -2546,7 +2545,7 @@ class CpplintTest(CpplintTestBase):
                   '  [whitespace/braces] [4]')
 
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['int function()',
                              '{',  # warning here
                              '  MutexLock l(&mu);',
@@ -3057,7 +3056,7 @@ class CpplintTest(CpplintTestBase):
 
     # Check multiline cases.
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['// Copyright 2014 Your Company.',
                              'string Class',
                              '::MemberFunction1();',
@@ -3208,7 +3207,7 @@ class CpplintTest(CpplintTestBase):
   def testLinePrecededByEmptyOrCommentLines(self):
     def DoTest(self, lines):
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc', lines, error_collector)
+      cpplint.ProcessFileData('Foo.cc', 'cc', lines, error_collector)
       # The warning appears only once.
       self.assertEquals(
           1,
@@ -3231,7 +3230,7 @@ class CpplintTest(CpplintTestBase):
   def testNewlineAtEOF(self):
     def DoTest(self, data, is_missing_eof):
       error_collector = ErrorCollector(self.assert_)
-      cpplint.ProcessFileData('foo.cc', 'cc', data.split('\n'),
+      cpplint.ProcessFileData('Foo.cc', 'cc', data.split('\n'),
                               error_collector)
       # The warning appears only once.
       self.assertEquals(
@@ -3251,7 +3250,7 @@ class CpplintTest(CpplintTestBase):
       else:
           unidata = str(raw_bytes, 'utf8', 'replace').split('\n')
       cpplint.ProcessFileData(
-          'foo.cc', 'cc',
+          'Foo.cc', 'cc',
           unidata,
           error_collector)
       # The warning appears only once.
@@ -3324,7 +3323,7 @@ class CpplintTest(CpplintTestBase):
 
   def testAllowBlankLineBeforeClosingNamespace(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['namespace {',
                              '',
                              '}  // namespace',
@@ -3349,7 +3348,7 @@ class CpplintTest(CpplintTestBase):
 
   def testAllowBlankLineBeforeIfElseChain(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['if (hoge) {',
                              '',  # No warning
                              '} else if (piyo) {',
@@ -3366,7 +3365,7 @@ class CpplintTest(CpplintTestBase):
 
   def testAllowBlankLineAfterExtern(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['extern "C" {',
                              '',
                              'EXPORTAPI void APICALL Some_function() {}',
@@ -3382,7 +3381,7 @@ class CpplintTest(CpplintTestBase):
 
   def testBlankLineBeforeSectionKeyword(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['class A {',
                              ' public:',
                              ' protected:',   # warning 1
@@ -3418,7 +3417,7 @@ class CpplintTest(CpplintTestBase):
 
   def testNoBlankLineAfterSectionKeyword(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['class A {',
                              ' public:',
                              '',  # warning 1
@@ -3442,7 +3441,7 @@ class CpplintTest(CpplintTestBase):
 
   def testAllowBlankLinesInRawStrings(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['// Copyright 2014 Your Company.',
                              'static const char *kData[] = {R"(',
                              '',
@@ -3455,7 +3454,7 @@ class CpplintTest(CpplintTestBase):
 
   def testElseOnSameLineAsClosingBraces(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['if (hoge) {',
                              '}',
                              'else if (piyo) {',  # Warning on this line
@@ -3469,7 +3468,7 @@ class CpplintTest(CpplintTestBase):
         '  [whitespace/newline] [4]'))
 
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['if (hoge) {',
                              '',
                              '}',
@@ -3483,7 +3482,7 @@ class CpplintTest(CpplintTestBase):
         '  [whitespace/newline] [4]'))
 
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['if (hoge) {',
                              '',
                              '}',
@@ -3495,7 +3494,7 @@ class CpplintTest(CpplintTestBase):
 
   def testMultipleStatementsOnSameLine(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['for (int i = 0; i < 1; i++) {}',
                              'switch (x) {',
                              '  case 0: func(); break; ',
@@ -3507,7 +3506,7 @@ class CpplintTest(CpplintTestBase):
 
     old_verbose_level = cpplint._cpplint_state.verbose_level
     cpplint._cpplint_state.verbose_level = 0
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['sum += MathUtil::SafeIntRound(x); x += 0.1;'],
                             error_collector)
     cpplint._cpplint_state.verbose_level = old_verbose_level
@@ -3516,7 +3515,7 @@ class CpplintTest(CpplintTestBase):
     error_collector = ErrorCollector(self.assert_)
     old_verbose_level = cpplint._cpplint_state.verbose_level
     cpplint._cpplint_state.verbose_level = 0
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['const auto lambda = '
                               '[](const int i) { return i; };'],
                             error_collector)
@@ -3527,7 +3526,7 @@ class CpplintTest(CpplintTestBase):
     error_collector = ErrorCollector(self.assert_)
     old_verbose_level = cpplint._cpplint_state.verbose_level
     cpplint._cpplint_state.verbose_level = 0
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['const auto result = std::any_of(vector.begin(), '
                               'vector.end(), '
                               '[](const int i) { return i > 0; });'],
@@ -3539,7 +3538,7 @@ class CpplintTest(CpplintTestBase):
     error_collector = ErrorCollector(self.assert_)
     old_verbose_level = cpplint._cpplint_state.verbose_level
     cpplint._cpplint_state.verbose_level = 0
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['return mutex::Lock<void>([this]() { '
                               'this->ReadLock(); }, [this]() { '
                               'this->ReadUnlock(); });'],
@@ -3551,7 +3550,7 @@ class CpplintTest(CpplintTestBase):
     error_collector = ErrorCollector(self.assert_)
     old_verbose_level = cpplint._cpplint_state.verbose_level
     cpplint._cpplint_state.verbose_level = 0
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['return mutex::Lock<void>([this]() { '
                               'this->ReadLock(); }, [this]() { '
                               'this->ReadUnlock(); }, object);'],
@@ -3562,7 +3561,7 @@ class CpplintTest(CpplintTestBase):
 
   def testEndOfNamespaceComments(self):
     error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData('foo.cc', 'cc',
+    cpplint.ProcessFileData('Foo.cc', 'cc',
                             ['namespace {',
                              '',
                              '}',  # No warning (too short)
@@ -4088,64 +4087,64 @@ class CpplintTest(CpplintTestBase):
                         ['--filter=+a,b,-c'])
       self.assertRaises(SystemExit, cpplint.ParseArguments, ['--headers'])
 
-      self.assertEquals(['foo.cc'], cpplint.ParseArguments(['foo.cc']))
+      self.assertEquals(['Foo.cc'], cpplint.ParseArguments(['Foo.cc']))
       self.assertEquals(old_output_format, cpplint._cpplint_state.output_format)
       self.assertEquals(old_verbose_level, cpplint._cpplint_state.verbose_level)
 
-      self.assertEquals(['foo.cc'],
-                        cpplint.ParseArguments(['--v=1', 'foo.cc']))
+      self.assertEquals(['Foo.cc'],
+                        cpplint.ParseArguments(['--v=1', 'Foo.cc']))
       self.assertEquals(1, cpplint._cpplint_state.verbose_level)
-      self.assertEquals(['foo.h'],
-                        cpplint.ParseArguments(['--v=3', 'foo.h']))
+      self.assertEquals(['Foo.h'],
+                        cpplint.ParseArguments(['--v=3', 'Foo.h']))
       self.assertEquals(3, cpplint._cpplint_state.verbose_level)
-      self.assertEquals(['foo.cpp'],
-                        cpplint.ParseArguments(['--verbose=5', 'foo.cpp']))
+      self.assertEquals(['Foo.cpp'],
+                        cpplint.ParseArguments(['--verbose=5', 'Foo.cpp']))
       self.assertEquals(5, cpplint._cpplint_state.verbose_level)
       self.assertRaises(ValueError,
-                        cpplint.ParseArguments, ['--v=f', 'foo.cc'])
+                        cpplint.ParseArguments, ['--v=f', 'Foo.cc'])
 
-      self.assertEquals(['foo.cc'],
-                        cpplint.ParseArguments(['--output=emacs', 'foo.cc']))
+      self.assertEquals(['Foo.cc'],
+                        cpplint.ParseArguments(['--output=emacs', 'Foo.cc']))
       self.assertEquals('emacs', cpplint._cpplint_state.output_format)
-      self.assertEquals(['foo.h'],
-                        cpplint.ParseArguments(['--output=vs7', 'foo.h']))
+      self.assertEquals(['Foo.h'],
+                        cpplint.ParseArguments(['--output=vs7', 'Foo.h']))
       self.assertEquals('vs7', cpplint._cpplint_state.output_format)
       self.assertRaises(SystemExit,
-                        cpplint.ParseArguments, ['--output=blah', 'foo.cc'])
+                        cpplint.ParseArguments, ['--output=blah', 'Foo.cc'])
 
       filt = '-,+whitespace,-whitespace/indent'
-      self.assertEquals(['foo.h'],
-                        cpplint.ParseArguments(['--filter='+filt, 'foo.h']))
+      self.assertEquals(['Foo.h'],
+                        cpplint.ParseArguments(['--filter='+filt, 'Foo.h']))
       self.assertEquals(['-', '+whitespace', '-whitespace/indent'],
                         cpplint._cpplint_state.filters)
 
-      self.assertEquals(['foo.cc', 'foo.h'],
-                        cpplint.ParseArguments(['foo.cc', 'foo.h']))
+      self.assertEquals(['Foo.cc', 'Foo.h'],
+                        cpplint.ParseArguments(['Foo.cc', 'Foo.h']))
 
       cpplint._hpp_headers = old_headers
       cpplint._valid_extensions = old_valid_extensions
-      self.assertEqual(['foo.h'],
-                       cpplint.ParseArguments(['--linelength=120', 'foo.h']))
+      self.assertEqual(['Foo.h'],
+                       cpplint.ParseArguments(['--linelength=120', 'Foo.h']))
       self.assertEqual(120, cpplint._line_length)
-      self.assertEqual(set(['h', 'hh', 'hpp', 'hxx', 'h++', 'cuh']), cpplint.GetHeaderExtensions())  # Default value
+      self.assertEqual(set(['h', 'hh', 'hpp', 'hxx', 'h++']), cpplint.GetHeaderExtensions())  # Default value
 
       cpplint._hpp_headers = old_headers
       cpplint._valid_extensions = old_valid_extensions
-      self.assertEqual(['foo.h'],
-                       cpplint.ParseArguments(['--headers=h', 'foo.h']))
-      self.assertEqual(set(['h', 'c', 'cc', 'cpp', 'cxx', 'c++', 'cu']), cpplint.GetAllExtensions())
+      self.assertEqual(['Foo.h'],
+                       cpplint.ParseArguments(['--headers=h', 'Foo.h']))
+      self.assertEqual(set(['h', 'c', 'cc', 'cpp', 'cxx', 'c++']), cpplint.GetAllExtensions())
 
       cpplint._hpp_headers = old_headers
       cpplint._valid_extensions = old_valid_extensions
-      self.assertEqual(['foo.h'],
-                       cpplint.ParseArguments(['--extensions=hpp,cpp,cpp', 'foo.h']))
+      self.assertEqual(['Foo.h'],
+                       cpplint.ParseArguments(['--extensions=hpp,cpp,cpp', 'Foo.h']))
       self.assertEqual(set(['hpp', 'cpp']), cpplint.GetAllExtensions())
       self.assertEqual(set(['hpp']), cpplint.GetHeaderExtensions())
 
       cpplint._hpp_headers = old_headers
       cpplint._valid_extensions = old_valid_extensions
-      self.assertEqual(['foo.h'],
-                       cpplint.ParseArguments(['--extensions=cpp,cpp', '--headers=hpp,h', 'foo.h']))
+      self.assertEqual(['Foo.h'],
+                       cpplint.ParseArguments(['--extensions=cpp,cpp', '--headers=hpp,h', 'Foo.h']))
       self.assertEqual(set(['hpp', 'h']), cpplint.GetHeaderExtensions())
       self.assertEqual(set(['hpp', 'h', 'cpp']), cpplint.GetAllExtensions())
 
@@ -4396,7 +4395,7 @@ class CpplintTest(CpplintTestBase):
         error_collector.ResultList())
 
   def testUnnamedNamespacesInHeaders(self):
-    for extension in ['h', 'hpp', 'hxx', 'h++', 'cuh']:
+    for extension in ['h', 'hpp', 'hxx', 'h++']:
       self.doTestUnnamedNamespacesInHeaders(extension)
 
   def doTestUnnamedNamespacesInHeaders(self, extension):
@@ -4699,21 +4698,6 @@ class CpplintTest(CpplintTestBase):
               '  [build/header_guard] [5]' % expected_guard),
           error_collector.ResultList())
 
-    # Cuda guard
-    file_path = 'Foo.cuh'    
-    error_collector = ErrorCollector(self.assert_)
-    cpplint.ProcessFileData(file_path, 'cuh',
-                            ['#ifndef FOO',
-                             '#define FOO',
-                             '#endif  // FOO'],
-                            error_collector)
-    self.assertEquals(
-        1,
-        error_collector.ResultList().count(
-            '#ifndef header guard has wrong style, please use: %s'
-            '  [build/header_guard] [5]' % expected_guard),
-        error_collector.ResultList())
-
   def testPragmaOnce(self):
     expected_guard = 'Foo_1a2b3c4d5e6f7g8h'
     error_collector = ErrorCollector(self.assert_)
@@ -4733,7 +4717,7 @@ class CpplintTest(CpplintTestBase):
     try:
       test_directory = os.path.join(temp_directory, "test")
       os.makedirs(test_directory)
-      file_path = os.path.join(test_directory, 'foo.h')
+      file_path = os.path.join(test_directory, 'Foo.h')
       open(file_path, 'a').close()
       file_path = os.path.join(test_directory, 'Bar.h')
       open(file_path, 'a').close()
@@ -4742,11 +4726,11 @@ class CpplintTest(CpplintTestBase):
 
       error_collector = ErrorCollector(self.assertTrue)
       cpplint.ProcessFileData(
-        'test/foo.cc', 'cc',
+        'test/Foo.cc', 'cc',
         [''],
         error_collector)
       expected = "{dir}/{fn}.cc should include its header file {dir}/{fn}.h  [build/include] [5]".format(
-          fn="foo",
+          fn="Foo",
           dir=test_directory)
       self.assertEqual(
         1,
@@ -4754,8 +4738,8 @@ class CpplintTest(CpplintTestBase):
 
       error_collector = ErrorCollector(self.assertTrue)
       cpplint.ProcessFileData(
-        'test/foo.cc', 'cc',
-        [r'#include "test/foo.h"',
+        'test/Foo.cc', 'cc',
+        [r'#include "test/Foo.h"',
          ''
          ],
         error_collector)
@@ -4767,13 +4751,13 @@ class CpplintTest(CpplintTestBase):
       # "include itse header file" error
       error_collector = ErrorCollector(self.assertTrue)
       cpplint.ProcessFileData(
-        'test/foo.cc', 'cc',
-        [r'#include "./test/foo.h"',
+        'test/Foo.cc', 'cc',
+        [r'#include "./test/Foo.h"',
          ''
          ],
         error_collector)
       expected = "{dir}/{fn}.cc should include its header file {dir}/{fn}.h{unix_text}  [build/include] [5]".format(
-          fn="foo",
+          fn="Foo",
           dir=test_directory,
           unix_text=". Relative paths like . and .. are not allowed.")
       self.assertEqual(
@@ -4833,12 +4817,12 @@ class CpplintTest(CpplintTestBase):
     self.TestLint('#include "foo.h"',
                   'Include the directory when naming header files'
                   '  [build/include_subdir] [4]')
-    self.TestLint('#include "bar.hh"',
+    self.TestLint('#include "Bar.h"',
                   'Include the directory when naming header files'
                   '  [build/include_subdir] [4]')
     self.TestLint('#include "baz.aa"', '')
-    self.TestLint('#include "dir/foo.h"', '')
-    self.TestLint('#include "Python.h"', '')
+    self.TestLint('#include "dir/Foo.h"', '')
+    self.TestLint('#include "pythonDoc.h"', '')
     self.TestLint('#include "lua.h"', '')
 
   def testHppInclude(self):
@@ -4846,12 +4830,12 @@ class CpplintTest(CpplintTestBase):
       '#include <vector>',
       '#include <boost/any.hpp>'
     ])
-    self.TestLanguageRulesCheck('foo.h', code, '')
+    self.TestLanguageRulesCheck('Foo.h', code, '')
 
   def testBuildPrintfFormat(self):
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         [r'printf("\%%d", value);',
          r'snprintf(buffer, sizeof(buffer), "\[%d", value);',
          r'fprintf(file, "\(%d", value);',
@@ -4865,7 +4849,7 @@ class CpplintTest(CpplintTestBase):
 
     error_collector = ErrorCollector(self.assert_)
     cpplint.ProcessFileData(
-        'foo.cc', 'cc',
+        'Foo.cc', 'cc',
         ['// Copyright 2014 Your Company.',
          r'printf("\\%%%d", value);',
          r'printf(R"(\[)");',
@@ -4979,7 +4963,7 @@ class CpplintTest(CpplintTestBase):
 
     copyright_line = '// Copyright 2014 Google Inc. All Rights Reserved.'
 
-    file_path = 'mydir/googleclient/foo.cc'
+    file_path = 'mydir/googleclient/Foo.cc'
 
     # There should be a copyright message in the first 10 lines
     error_collector = ErrorCollector(self.assert_)
@@ -5048,9 +5032,9 @@ class Cxx11Test(CpplintTestBase):
   def TestCxx11Feature(self, code, expected_error):
     lines = code.split('\n')
     collector = ErrorCollector(self.assert_)
-    cpplint.RemoveMultiLineComments('foo.h', lines, collector)
+    cpplint.RemoveMultiLineComments('Foo.h', lines, collector)
     clean_lines = cpplint.CleansedLines(lines)
-    cpplint.FlagCxx11Features('foo.cc', clean_lines, 0, collector)
+    cpplint.FlagCxx11Features('Foo.cc', clean_lines, 0, collector)
     self.assertEquals(expected_error, collector.Results())
 
   def testBlockedHeaders(self):
@@ -5103,9 +5087,9 @@ class Cxx14Test(CpplintTestBase):
   def TestCxx14Feature(self, code, expected_error):
     lines = code.split('\n')
     collector = ErrorCollector(self.assert_)
-    cpplint.RemoveMultiLineComments('foo.h', lines, collector)
+    cpplint.RemoveMultiLineComments('Foo.h', lines, collector)
     clean_lines = cpplint.CleansedLines(lines)
-    cpplint.FlagCxx14Features('foo.cc', clean_lines, 0, collector)
+    cpplint.FlagCxx14Features('Foo.cc', clean_lines, 0, collector)
     self.assertEquals(expected_error, collector.Results())
 
   def testBlockedHeaders(self):
@@ -5242,7 +5226,8 @@ class OrderOfIncludesTest(CpplintTestBase):
     self.assertEqual('', self.include_state.CheckNextIncludeOrder(
         cpplint._CPP_SYS_HEADER))
     # This will eventually fail.
-    self.assertEqual('', self.include_state.CheckNextIncludeOrder(
+    self.assertEqual('Found header this file implements after C++ system header', 
+        self.include_state.CheckNextIncludeOrder(
         cpplint._LIKELY_MY_HEADER))
 
   def testCheckNextIncludeOrder_CppThenPossible(self):
@@ -5263,92 +5248,112 @@ class OrderOfIncludesTest(CpplintTestBase):
     self.assertEqual('', self.include_state.CheckNextIncludeOrder(
         cpplint._POSSIBLE_MY_HEADER))
 
+  def testCheckNextIncludeOrder_RokuThenCpp(self):
+    self.assertEqual('', self.include_state.CheckNextIncludeOrder(
+        cpplint._ROKU_CPP_HEADER))
+    self.assertEqual('Found C++ system header after Roku C++ header', 
+        self.include_state.CheckNextIncludeOrder(
+        cpplint._CPP_SYS_HEADER))
+
+  def testCheckNextIncludeOrder_RokuThenC(self):
+    self.assertEqual('', self.include_state.CheckNextIncludeOrder(
+        cpplint._ROKU_CPP_HEADER))
+    self.assertEqual('Found C system header after Roku C++ header', 
+        self.include_state.CheckNextIncludeOrder(
+        cpplint._C_SYS_HEADER))
+
+  def testCheckNextIncludeOrder_OtherSysThenRoku(self):
+    self.assertEqual('', self.include_state.CheckNextIncludeOrder(
+        cpplint._OTHER_SYS_HEADER))
+    self.assertEqual('Found Roku C++ header after other system header', 
+        self.include_state.CheckNextIncludeOrder(
+        cpplint._ROKU_CPP_HEADER))
 
   def testClassifyInclude(self):
     file_info = cpplint.FileInfo
     classify_include = cpplint._ClassifyInclude
     self.assertEqual(cpplint._C_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'stdio.h',
                                       True))
     self.assertEqual(cpplint._C_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'sys/time.h',
                                       True))
     self.assertEqual(cpplint._C_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'netipx/ipx.h',
                                       True))
     self.assertEqual(cpplint._C_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'arpa/ftp.h',
                                       True))
     self.assertEqual(cpplint._CPP_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'string',
                                       True))
     self.assertEqual(cpplint._CPP_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'typeinfo',
                                       True))
     self.assertEqual(cpplint._C_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
-                                      'foo/foo.h',
+                     classify_include(file_info('foo/Foo.cc'),
+                                      'foo/Foo.h',
                                       True))
     self.assertEqual(cpplint._OTHER_SYS_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
-                                      'foo/foo.h',
+                     classify_include(file_info('foo/Foo.cc'),
+                                      'foo/Foo.h',
                                       True,
                                       "standardcfirst"))
     self.assertEqual(cpplint._OTHER_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'string',
                                       False))
     self.assertEquals(cpplint._OTHER_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
+                     classify_include(file_info('foo/Foo.cc'),
                                       'boost/any.hpp',
                                       True))
     self.assertEqual(cpplint._OTHER_HEADER,
-                     classify_include(file_info('foo/foo.hxx'),
+                     classify_include(file_info('foo/Foo.hxx'),
                                       'boost/any.hpp',
                                       True))
     self.assertEqual(cpplint._OTHER_HEADER,
-                     classify_include(file_info('foo/foo.h++'),
+                     classify_include(file_info('foo/Foo.h++'),
                                       'boost/any.hpp',
                                       True))
     self.assertEqual(cpplint._LIKELY_MY_HEADER,
-                     classify_include(file_info('foo/foo.cc'),
-                                      'foo/foo-inl.h',
+                     classify_include(file_info('foo/Foo.cc'),
+                                      'foo/Foo-inl.h',
                                       False))
     self.assertEqual(cpplint._LIKELY_MY_HEADER,
-                     classify_include(file_info('foo/internal/foo.cc'),
-                                      'foo/public/foo.h',
+                     classify_include(file_info('foo/internal/Foo.cc'),
+                                      'foo/public/Foo.h',
                                       False))
     self.assertEqual(cpplint._POSSIBLE_MY_HEADER,
-                     classify_include(file_info('foo/internal/foo.cc'),
-                                      'foo/other/public/foo.h',
+                     classify_include(file_info('foo/internal/Foo.cc'),
+                                      'foo/other/public/Foo.h',
                                       False))
     self.assertEqual(cpplint._OTHER_HEADER,
-                     classify_include(file_info('foo/internal/foo.cc'),
-                                      'foo/other/public/foop.h',
+                     classify_include(file_info('foo/internal/Foo.cc'),
+                                      'foo/other/public/Foop.h',
                                       False))
 
   def testTryDropCommonSuffixes(self):
     cpplint._hpp_headers = set([])
     cpplint._valid_extensions = set([])
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo-inl.h'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo-inl.hxx'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo-inl.h++'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo-inl.hpp'))
-    self.assertEqual('foo/bar/foo',
-                     cpplint._DropCommonSuffixes('foo/bar/foo_inl.h'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo.cc'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo.cxx'))
-    self.assertEqual('foo/foo', cpplint._DropCommonSuffixes('foo/foo.c'))
-    self.assertEqual('foo/foo_unusualinternal',
-                     cpplint._DropCommonSuffixes('foo/foo_unusualinternal.h'))
-    self.assertEqual('foo/foo_unusualinternal',
-                     cpplint._DropCommonSuffixes('foo/foo_unusualinternal.hpp'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo-inl.h'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo-inl.hxx'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo-inl.h++'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo-inl.hpp'))
+    self.assertEqual('foo/bar/Foo',
+                     cpplint._DropCommonSuffixes('foo/bar/Foo_inl.h'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo.cc'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo.cxx'))
+    self.assertEqual('foo/Foo', cpplint._DropCommonSuffixes('foo/Foo.c'))
+    self.assertEqual('foo/Foo_Unusualinternal',
+                     cpplint._DropCommonSuffixes('foo/Foo_Unusualinternal.h'))
+    self.assertEqual('foo/Foo_Unusualinternal',
+                     cpplint._DropCommonSuffixes('foo/Foo_Unusualinternal.hpp'))
     self.assertEqual('',
                      cpplint._DropCommonSuffixes('_test.cc'))
     self.assertEqual('',
@@ -5373,38 +5378,44 @@ class OrderOfIncludesTest(CpplintTestBase):
       return ''.join(include_list)
 
     # Test singleton cases first.
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['"foo/foo.h"']), '')
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['<stdio.h>']), '')
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['<string>']), '')
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['"foo/foo-inl.h"']), '')
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['"bar/bar-inl.h"']), '')
-    self.TestLanguageRulesCheck('foo/foo.cc', Format(['"bar/bar.h"']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['"foo/Foo.h"']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['<stdio.h>']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['<string>']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['"foo/Foo-inl.h"']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['"bar/Bar-inl.h"']), '')
+    self.TestLanguageRulesCheck('foo/Foo.cc', Format(['"bar/Bar.h"']), '')
 
     # Test everything in a good and new order.
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['"foo/foo.h"',
-                                        '"foo/foo-inl.h"',
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['"Foo.h"',
+                                        '"foo/Foo-inl.h"',
                                         '<stdio.h>',
                                         '<string>',
                                         '<unordered_map>',
-                                        '"bar/bar-inl.h"',
-                                        '"bar/bar.h"']),
+                                        '"bar/Bar-inl.h"',
+                                        '"bar/Bar.h"']),
                                 '')
 
     # Test bad orders.
     self.TestLanguageRulesCheck(
-        'foo/foo.cc',
+        'foo/Foo.cc',
         Format(['<string>', '<stdio.h>']),
         'Found C system header after C++ system header.'
-        ' Should be: foo.h, c system, c++ system, other.'
+        ' Should be: Foo.h, c system, c++ system, Roku, other.'
         '  [build/include_order] [4]')
     self.TestLanguageRulesCheck(
-        'foo/foo.cc',
-        Format(['"foo/bar-inl.h"',
-                '"foo/foo-inl.h"']),
+        'foo/Foo.cc',
+        Format(['<stdio.h>', '<Base/Singleton.h>', '<string>']),
+        'Found C++ system header after Roku C++ header.'
+        ' Should be: Foo.h, c system, c++ system, Roku, other.'
+        '  [build/include_order] [4]')
+    self.TestLanguageRulesCheck(
+        'foo/Foo.cc',
+        Format(['"foo/Foo-inl.h"',
+                '"foo/Bar-inl.h"']),
         '')
     self.TestLanguageRulesCheck(
-        'foo/foo.cc',
+        'foo/Foo.cc',
         Format(['"foo/e.h"',
                 '"foo/b.h"',  # warning here (e>b)
                 '"foo/c.h"',
@@ -5415,24 +5426,24 @@ class OrderOfIncludesTest(CpplintTestBase):
          'Include "foo/a.h" not in alphabetical order'
          '  [build/include_alpha] [4]'])
     # -inl.h headers are no longer special.
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['"foo/foo-inl.h"', '<string>']),
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['"foo/Foo-inl.h"', '<string>']),
                                 '')
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['"foo/bar.h"', '"foo/bar-inl.h"']),
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['"foo/Bar.h"', '"foo/Bar-inl.h"']),
                                 '')
     # Test componentized header.  OK to have my header in ../public dir.
-    self.TestLanguageRulesCheck('foo/internal/foo.cc',
-                                Format(['"foo/public/foo.h"', '<string>']),
+    self.TestLanguageRulesCheck('foo/internal/Foo.cc',
+                                Format(['"foo/public/Foo.h"', '<string>']),
                                 '')
     # OK to have my header in other dir (not stylistically, but
     # cpplint isn't as good as a human).
-    self.TestLanguageRulesCheck('foo/internal/foo.cc',
-                                Format(['"foo/other/public/foo.h"',
+    self.TestLanguageRulesCheck('foo/internal/Foo.cc',
+                                Format(['"foo/other/public/Foo.h"',
                                         '<string>']),
                                 '')
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['"foo/foo.h"',
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['"foo/Foo.h"',
                                         '<string>',
                                         '"base/google.h"',
                                         '"base/flags.h"']),
@@ -5440,9 +5451,9 @@ class OrderOfIncludesTest(CpplintTestBase):
                                 'order  [build/include_alpha] [4]')
     # According to the style, -inl.h should come before .h, but we don't
     # complain about that.
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['"foo/foo-inl.h"',
-                                        '"foo/foo.h"',
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['"foo/Foo-inl.h"',
+                                        '"foo/Foo.h"',
                                         '"base/google.h"',
                                         '"base/google-inl.h"']),
                                 '')
@@ -5472,7 +5483,7 @@ class OrderOfIncludesTest(CpplintTestBase):
                  '#include "base/port.h"\n',
                  '#include <initializer_list>\n']),
         ('Found C++ system header after other header. '
-         'Should be: a.h, c system, c++ system, other.  '
+         'Should be: a.h, c system, c++ system, Roku, other.  '
          '[build/include_order] [4]'))
     self.TestLanguageRulesCheck(
         'a/a.cc',
@@ -5490,12 +5501,18 @@ class OrderOfIncludesTest(CpplintTestBase):
                  '#include <initializer_list>\n',
                  '#endif  // LANG_CXX11\n']),
         ('Found C++ system header after other header. '
-         'Should be: a.h, c system, c++ system, other.  '
+         'Should be: a.h, c system, c++ system, Roku, other.  '
          '[build/include_order] [4]'))
 
+    # Good case
+    self.TestLanguageRulesCheck(
+        'foo/Foo.cc',
+        Format(['"Foo.h"', '<stdio.h>', '<string>', '<Base/Singleton.h>', '"mydir/Bar.h']),
+        '')
+
     # Third party headers are exempt from order checks
-    self.TestLanguageRulesCheck('foo/foo.cc',
-                                Format(['<string>', '"Python.h"', '<vector>']),
+    self.TestLanguageRulesCheck('foo/Foo.cc',
+                                Format(['<string>', '"pythonDoc.h"', '<vector>']),
                                 '')
 
 
